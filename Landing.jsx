@@ -93,7 +93,7 @@ function Landing() {
       </div>
 
       <footer style={styles.footer}>
-        <p>© 2026 EasyLinks. Built with ❤️</p>
+        <p>© 2026 FreeLinks. Built with ❤️</p>
       </footer>
     </div>
   )

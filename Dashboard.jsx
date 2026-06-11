@@ -120,7 +120,7 @@ function Dashboard() {
     <div style={styles.container}>
       <div style={styles.sidebar}>
         <div onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
-          <h2 style={styles.logo}>LinkApp</h2>
+          <h2 style={styles.logo}>FreeLinks</h2>
         </div>
         <div style={styles.nav}>
           <div style={{...styles.navItem, backgroundColor: '#667eea', color: 'white'}}>📊 Dashboard</div>

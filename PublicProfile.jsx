@@ -96,7 +96,7 @@ function PublicProfile() {
 
         <div style={styles.branding}>
           <span onClick={() => navigate('/')} style={styles.brandLink}>
-            Powered by EasyLinks - Made by UCNMVC
+            Powered by FreeLinks - Made by UCNMVC
           </span>
         </div>
       </div>

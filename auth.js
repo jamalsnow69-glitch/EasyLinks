@@ -1,5 +1,4 @@
-// localStorage-based auth and database
-// Uses your Google Client ID for OAuth authentication
+
 const STORAGE_KEY = 'linkapp_current_user'
 const USERS_KEY = 'linkapp_users'
 const PROFILES_KEY = 'linkapp_profiles'
