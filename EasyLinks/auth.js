@@ -1,13 +1,53 @@
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+
+export const supabase = createClient(supabaseUrl, supabaseKey)
 
 const STORAGE_KEY = 'linkapp_current_user'
-const USERS_KEY = 'linkapp_users'
-const PROFILES_KEY = 'linkapp_profiles'
-const USERNAME_MAP_KEY = 'linkapp_username_map'
-
 
 const GOOGLE_CLIENT_ID = '791535277980-os1mpr3lnhp030kmt8213el3qdm09lv3.apps.googleusercontent.com'
 
-// Real Google sign-in using OAuth 2.0 Implicit Flow
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+function cleanUsername(username) {
+  return String(username || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9_]/g, '')
+    .slice(0, 24)
+}
+
+function toAppProfile(row) {
+  if (!row) return null
+
+  return {
+    id: row.id,
+    userId: row.user_id,
+    username: row.username || '',
+    displayName: row.display_name || '',
+    bio: row.bio || '',
+    avatar: row.avatar || '',
+    links: Array.isArray(row.links) ? row.links : [],
+    socialLinks: row.social_links || {
+      twitter: '',
+      instagram: '',
+      linkedin: '',
+      youtube: '',
+      github: '',
+      discord: ''
+    },
+    email: row.email || '',
+    photoURL: row.photo_url || '',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
 export const signInWithGoogle = async () => {
   if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID.length > 10) {
     return new Promise((resolve, reject) => {
@@ -16,20 +56,16 @@ export const signInWithGoogle = async () => {
         const height = 600
         const left = window.screenX + (window.outerWidth - width) / 2
         const top = window.screenY + (window.outerHeight - height) / 2
-        
-        // Use window.location.origin to dynamically get the correct redirect URI
+
         const redirectUri = window.location.origin + '/login'
-        console.log('Redirect URI:', redirectUri)
-        
+
         const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
         authUrl.searchParams.append('client_id', GOOGLE_CLIENT_ID)
         authUrl.searchParams.append('redirect_uri', redirectUri)
         authUrl.searchParams.append('response_type', 'token')
         authUrl.searchParams.append('scope', 'profile email')
         authUrl.searchParams.append('prompt', 'consent')
-        
-        console.log('Auth URL:', authUrl.toString())
-        
+
         const popup = window.open(
           authUrl.toString(),
           'Google Login',
@@ -50,38 +86,36 @@ export const signInWithGoogle = async () => {
             }
 
             const popupUrl = popup.location.href
-            
+
             if (popupUrl.includes('access_token=')) {
               const params = new URLSearchParams(popupUrl.split('#')[1])
               const accessToken = params.get('access_token')
-              
+
               popup.close()
               clearInterval(checkPopup)
-              
+
               fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                 headers: { Authorization: `Bearer ${accessToken}` }
               })
-              .then(res => res.json())
-              .then(userInfo => {
-                const user = {
-                  uid: userInfo.sub,
-                  displayName: userInfo.name,
-                  email: userInfo.email,
-                  photoURL: userInfo.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.email}`,
-                  accessToken
-                }
-                
-                const users = JSON.parse(localStorage.getItem(USERS_KEY) || '{}')
-                users[user.uid] = user
-                localStorage.setItem(USERS_KEY, JSON.stringify(users))
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
-                
-                resolve(user)
-              })
-              .catch(reject)
+                .then(res => res.json())
+                .then(userInfo => {
+                  const user = {
+                    uid: userInfo.sub,
+                    displayName: userInfo.name,
+                    email: userInfo.email,
+                    photoURL:
+                      userInfo.picture ||
+                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${userInfo.email}`,
+                    accessToken
+                  }
+
+                  localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
+                  resolve(user)
+                })
+                .catch(reject)
             }
           } catch (e) {
-            // Cross-origin access - expected until redirect
+            // Cross-origin access is expected until Google redirects back.
           }
         }, 500)
       } catch (error) {
@@ -89,7 +123,7 @@ export const signInWithGoogle = async () => {
       }
     })
   }
-  
+
   throw new Error('Please add your Google Client ID to auth.js')
 }
 
@@ -107,65 +141,84 @@ export const getCurrentUser = () => {
 }
 
 export const saveProfile = async (userId, profileData) => {
-  try {
-    const profiles = JSON.parse(localStorage.getItem(PROFILES_KEY) || '{}')
-    const usernameMap = JSON.parse(localStorage.getItem(USERNAME_MAP_KEY) || '{}')
-    
-    if (profiles[userId]?.username) {
-      delete usernameMap[profiles[userId].username]
-    }
-    
-    profiles[userId] = {
-      ...profileData,
-      userId,
-      updatedAt: new Date().toISOString()
-    }
-    
-    if (profileData.username) {
-      usernameMap[profileData.username] = userId
-    }
-    
-    localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles))
-    localStorage.setItem(USERNAME_MAP_KEY, JSON.stringify(usernameMap))
-    
-    return true
-  } catch (error) {
-    console.error('Save profile error:', error)
+  const username = cleanUsername(profileData.username)
+
+  if (!userId) {
+    throw new Error('Missing user ID')
+  }
+
+  if (!username) {
+    throw new Error('Username is required')
+  }
+
+  const row = {
+    user_id: String(userId),
+    username,
+    display_name: profileData.displayName || '',
+    bio: profileData.bio || '',
+    avatar: profileData.avatar || '',
+    links: Array.isArray(profileData.links) ? profileData.links : [],
+    social_links: profileData.socialLinks || {},
+    email: profileData.email || '',
+    photo_url: profileData.photoURL || '',
+    updated_at: new Date().toISOString()
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .upsert(row, {
+      onConflict: 'user_id'
+    })
+    .select()
+    .single()
+
+  if (error) {
     throw error
   }
+
+  return toAppProfile(data)
 }
 
 export const getProfileByUserId = async (userId) => {
-  try {
-    const profiles = JSON.parse(localStorage.getItem(PROFILES_KEY) || '{}')
-    return profiles[userId] || null
-  } catch (error) {
-    console.error('Get profile error:', error)
-    return null
+  if (!userId) return null
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', String(userId))
+    .maybeSingle()
+
+  if (error) {
+    throw error
   }
+
+  return toAppProfile(data)
 }
 
 export const getProfileByUsername = async (username) => {
-  try {
-    const usernameMap = JSON.parse(localStorage.getItem(USERNAME_MAP_KEY) || '{}')
-    const profiles = JSON.parse(localStorage.getItem(PROFILES_KEY) || '{}')
-    const userId = usernameMap[username]
-    
-    if (userId && profiles[userId]) {
-      return profiles[userId]
-    }
-    return null
-  } catch (error) {
-    console.error('Get profile error:', error)
-    return null
+  const clean = cleanUsername(username)
+
+  if (!clean) return null
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('username', clean)
+    .maybeSingle()
+
+  if (error) {
+    throw error
   }
+
+  return toAppProfile(data)
 }
 
 export const onAuthStateChanged = (callback) => {
   const user = getCurrentUser()
+
   setTimeout(() => {
     callback(user)
   }, 0)
-  
+
   return () => {}
 }

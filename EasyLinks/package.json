@@ -1,6 +1,6 @@
 {
-  "name": "easylinks",
-  "version": "1.0.0",
+  "name": "freelinks",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,10 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
     "@vitejs/plugin-react": "latest",
     "vite": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "react-router-dom": "^6.21.1"
   },
   "devDependencies": {},
   "engines": {
