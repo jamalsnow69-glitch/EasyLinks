@@ -1,9 +1,9 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom'
-import Landing from '../Landing'
-import PublicProfile from '../PublicProfile'
-import Dashboard from '../Dashboard'
-import Login from '../Login'
+import Landing from './Landing'
+import PublicProfile from './PublicProfile'
+import Dashboard from './Dashboard'
+import Login from './Login'
 
 function App() {
   return (
