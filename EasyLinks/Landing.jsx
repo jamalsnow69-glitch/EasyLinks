@@ -7,7 +7,7 @@ function Landing() {
   return (
     <div style={styles.container}>
       <nav style={styles.nav}>
-        <h1 style={styles.logo}>EasyLinks</h1>
+        <h1 style={styles.logo}>FreeLinks</h1>
         <div style={styles.navLinks}>
           <button onClick={() => navigate('/login')} style={styles.loginBtn}>Sign In</button>
         </div>
